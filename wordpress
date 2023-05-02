@@ -1,0 +1,59 @@
+- name: Deploying and Configuring WordPress site
+  hosts: wordpress
+  become: true
+  tasks:
+    - name: Install Apache web server and PHP
+      apt:
+        name:
+          - apache2
+          - php
+          - libapache2-mod-php
+          - php-mysql
+        state: present
+
+    - name: Install MySQL Server
+      apt:
+        name: mysql-server
+        state: present
+
+    - name: Set MySQL root password
+      mysql_user:
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+        name: root
+        host: localhost
+        password: 'Testpassword@123'
+        plugin: mysql_native_password
+
+    - name: Create a new database with name 'wp'
+      mysql_db:
+        name: wp
+        state: present
+        login_user: root
+        login_password: 'Testpassword@123'
+
+    - name: Create database user using hashed password with all database privileges
+      mysql_user:
+        name: "wp_user"
+        password: "aman123"
+        priv: '*.*:ALL'
+        state: present
+        login_user: root
+        login_password: 'Testpassword@123'
+
+    - name: Download WordPress
+      get_url:
+        url: https://wordpress.org/latest.tar.gz
+        dest: /tmp/latest.tar.gz
+
+    - name: Extract WordPress
+      unarchive:
+        src: /tmp/latest.tar.gz
+        dest: /var/www/html
+        remote_src: true
+        extra_opts: "--strip-components=1"
+
+    - name: Restart Apache service
+      service:
+        name: apache2
+        state: restarted
